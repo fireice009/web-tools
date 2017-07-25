@@ -68,7 +68,7 @@ func custom(rst map[string]int, ch <-chan string) {
 		w, err1 := weight(url)
 		if err1 != nil {
 			fmt.Println(err1)
-			continue
+			w = -1
 		}
 		rst[url] = w
 		counter++
