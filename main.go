@@ -9,13 +9,16 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 var counter int
 var total int
+var validCounter int // weight greater than 0
 var wg sync.WaitGroup
 
 func main() {
+	start := time.Now()
 	rst := map[string]int{}
 	b, err := ioutil.ReadFile("src.csv")
 	if err != nil {
@@ -52,6 +55,9 @@ func main() {
 		w.Write([]string{url, strconv.Itoa(wgh)})
 	}
 	w.Flush()
+
+	fmt.Printf("\nvalid count=%d/%d(%.1f%%)  cost=%.1fs\n",
+		validCounter, total, float32(validCounter)/float32(total)*100, time.Now().Sub(start).Seconds())
 }
 
 func product(rst map[string]int, ch chan string) {
@@ -69,6 +75,9 @@ func custom(rst map[string]int, ch <-chan string) {
 		if err1 != nil {
 			fmt.Println(err1)
 			w = -1
+		}
+		if w > 0 {
+			validCounter++
 		}
 		rst[url] = w
 		counter++
