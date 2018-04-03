@@ -38,7 +38,7 @@ func main() {
 	total = len(rst)
 	wg.Add(total)
 	go product(rst, ch)
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 2; i++ {
 		go custom(rst, ch)
 	}
 	wg.Wait()
