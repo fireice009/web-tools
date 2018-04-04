@@ -6,17 +6,23 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
-	"runtime"
 	"strings"
 	"time"
 
 	"github.com/sclevine/agouti"
 )
 
+var taskConfig = map[int]int{
+	500: 6,
+	300: 5,
+	200: 2,
+	100: 1,
+}
+
 var conf struct {
 	UserName string `json:"username"`
 	Password string `json:"password"`
-	Task     int    `json:"task"`
+	Money    int    `json:"money"`
 }
 
 func RandInt(n int) int {
@@ -35,7 +41,9 @@ func init() {
 		panic(err)
 	}
 
-	log.Println(runtime.GOOS)
+	if _, ok := taskConfig[conf.Money]; ok == false {
+		panic(fmt.Sprintf("config error. money cannot be %d", conf.Money))
+	}
 }
 
 func main() {
@@ -110,36 +118,44 @@ func main() {
 	}
 
 	isAuto := false
-	js := fmt.Sprintf("getTask(%d)", conf.Task)
+	js := fmt.Sprintf("getTask(%d)", taskConfig[conf.Money])
 	for {
 		var ret interface{}
 		err := pg.RunScript(js, nil, &ret)
-		log.Printf("getTask result: %+v\n", ret)
+		log.Printf("get task result: %+v\n", ret)
 		if err != nil {
-			fmt.Println("getTask error. ", err)
+			fmt.Println("get task error. ", err)
 			continue
 		}
-
-		time.Sleep(time.Second)
-		flag, _ := pg.HTML()
-		if strings.Contains(flag, "扫码代充") {
-			log.Println("等待充值 10 秒...")
-			time.Sleep(10 * time.Second)
-			continue
+		for i := 0; i < 10; i++ {
+			flag, _ := pg.HTML()
+			if strings.Contains(flag, "获取代充订单") {
+				break
+			}
+			time.Sleep(time.Second)
 		}
 
 		if isAuto == false {
 			elem := pg.FindByName("auto")
-			if elem == nil {
-				continue
-			}
 			elem.Click()
 			isAuto = true
 		}
-
 		elem := pg.FindByID("submit")
 		elem.Click()
-		itv := RandInt(2000) + 4000
-		time.Sleep(time.Duration(itv) * time.Millisecond)
+
+		flag, _ := pg.HTML()
+		if strings.Contains(flag, "扫码代充") {
+			for {
+				log.Println("等待充值...")
+				time.Sleep(2 * time.Second)
+				flag, _ := pg.HTML()
+				if strings.Contains(flag, "扫码代充") == false {
+					break
+				}
+			}
+		} else {
+			itv := RandInt(2000) + 4000
+			time.Sleep(time.Duration(itv) * time.Millisecond)
+		}
 	}
 }
