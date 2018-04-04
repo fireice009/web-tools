@@ -1,5 +1,7 @@
 package main
 
+// 通过爱站查询域名的百度权重
+
 import (
 	"encoding/csv"
 	"fmt"
